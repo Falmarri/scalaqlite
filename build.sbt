@@ -1,24 +1,16 @@
+import scala.sys.process._
 name := "scalaqlite"
 
 organization := "com.meraki"
 
 version := "0.8-RC2"
 
-scalaVersion := "2.11.7"
+scalaVersion := "2.13.3"
+crossScalaVersions := Seq(scalaVersion.value, "2.12.12", "2.11.12")
 
-libraryDependencies += "org.scalatest" %% "scalatest" % "2.2.4" % "test"
+libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.0" % "test"
+libraryDependencies += "org.xerial" % "sqlite-jdbc" % "3.32.3.2"
 
-scalacOptions in Test ++= Seq("-deprecation")
-
-testOptions in Test += Tests.Argument("-Djava.library.path=target/native")
+scalacOptions ++= Seq("-deprecation")
 
 publishTo := Some(Resolver.file("file",  new File( "releases" )) )
-
-lazy val packageSqlite3C = taskKey[Unit]("Packages only Sqlite3C.java")
-
-packageSqlite3C := {
-  (compile in Compile).value
-  val cmd = Seq("jar", "-cf", s"${crossTarget.value}/sqlite3c-${version.value}.jar",
-    "-C", (classDirectory in Compile).value.toString, "org/srhea/scalaqlite/Sqlite3C.class")
-  if ((cmd ! streams.value.log) != 0) error("Couldn't package Sqlite3C")
-}

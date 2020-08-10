@@ -4,15 +4,14 @@
 // See the file LICENSE included in this distribution for details.
 
 package org.srhea.scalaqlite
-import org.scalatest.FlatSpec
-import org.scalatest.Matchers
-import scala.util.{ Failure, Try }
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
-class SqliteDbSpec extends FlatSpec with Matchers {
+class SqliteDbSpec extends AnyFlatSpec with Matchers {
     val db = new SqliteDb(":memory:")
 
     "database connections" should "work in multithreaded mode" in  {
-      val db2 = new SqliteDb(":memory:", SqliteDb.BaseFlags | Sqlite3C.SQLITE_OPEN_NOMUTEX)
+      val db2 = new SqliteDb(":memory:")
       db2.execute("CREATE TABLE foo (i INTEGER, f DOUBLE, t TEXT);")
       db2.execute("INSERT INTO foo (i, f, t) VALUES (1, 2.0, 'foo');")
       db2.foreachRow("SELECT count(*) FROM foo;") (_ should equal (SqlLong(1) :: Nil))
@@ -151,9 +150,13 @@ class SqliteDbSpec extends FlatSpec with Matchers {
     "Error messages" should "contain accurate descriptions" in {
       db.execute("CREATE TABLE error_test (x PRIMARY KEY)")
       db.execute("INSERT INTO error_test VALUES (1)")
-      val Failure(SqlException(msg)) = Try(db.execute("INSERT INTO error_test VALUES (1)"))
-      msg should include ("Abort due to constraint violation")
-      msg should include ("UNIQUE constraint failed: error_test.x")
-      val Failure(SqlException(msg2)) = Try(db.foreachRow("SELECT * FROM blah_blah")(_ => 1))
+      val ex = intercept[SqlException] {
+        db.execute("INSERT INTO error_test VALUES (1)")
+      }
+      ex.msg should include ("Abort due to constraint violation")
+      ex.msg should include ("UNIQUE constraint failed: error_test.x")
+      intercept[SqlException] {
+        db.foreachRow("SELECT * FROM blah_blah")(_ => 1)
+      }
     }
 }
